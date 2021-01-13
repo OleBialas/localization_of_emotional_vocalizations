@@ -5,18 +5,25 @@ import os
 import slab
 from freefield import main
 from experiment import DIR, priming, block
-# initialize the setup
+
+# calibrate the camera
+main.initialize_setup(setup="arc", default_mode="cam_calibration", zbus=True, connection="GB", camera_type="flir")
+calibration_targets = main.get_speaker_list([9, 16, 23])
+main.calibrate_camera_no_visual(calibration_targets, n_reps=1, n_images=5)
+
+# initialize the setup for the experiment
 proc_list = [["RX81", "RX8", DIR/"rcx"/"play_buffer_from_channel.rcx"],
              ["RX82", "RX8", DIR/"rcx"/"play_buffer_from_channel.rcx"],
              ["RP2", "RP2",  DIR/"rcx"/"button_response.rcx"]]
+main.PROCESSORS.initialize(proc_list=proc_list, zbus=True, connection="GB")
 
-main.initialize_setup(setup="arc", proc_list=proc_list, zbus=True, connection="GB", camera_type="flir")
 
 # configuring number of blocks and trials:
 n_repeat_conditions = 2
 n_repeat_files = 2
 n_repeat_speakers = 4
 speakers = main.get_speaker_list(list(range(9, 24)))  # speakers used in the experiment
+calibration_targets = main.get_speaker_list([9, 16, 23])
 priming_speakers = speakers.iloc[::3, :]  # use every third speaker for priming
 priming_speakers = priming_speakers.reset_index()
 speakers = [speakers.loc[i] for i in speakers.index]
@@ -43,7 +50,9 @@ for i in range(conditions.n_trials+1):  # make trial lists for single blocks, +1
 # run a "noise" block:
 file_seq = slab.Trialsequence(str(DIR/"data"/subject/"file_seq0.pickle"))
 speaker_seq = slab.Trialsequence(str(DIR/"data"/subject/"speaker_seq0.pickle"))
-response = block(kind="noise", speaker_seq=speaker_seq, file_seq=file_seq)  # run the block
+speaker_seq = block(kind="noise", speaker_seq=speaker_seq, file_seq=file_seq)  # run the block
+speaker_seq.save_pickle(DIR/"data"/subject/f"speaker_seq0.pickle")
+
 
 # run the blocks:
 for condition in conditions:
@@ -51,4 +60,5 @@ for condition in conditions:
     file_seq = slab.Trialsequence(str(DIR/"data"/subject/f"file_seq{conditions.this_n+1}.pickle"))
     speaker_seq = slab.Trialsequence(str(DIR/"data"/subject/f"speaker_seq{conditions.this_n+1}.pickle"))
     priming(priming_speakers, condition)  # run the priming
-    response = block(kind=condition, speaker_seq=speaker_seq, file_seq=file_seq)  # run the block
+    speaker_seq = block(kind=condition, speaker_seq=speaker_seq, file_seq=file_seq)  # run the block
+    speaker_seq.save_pickle(DIR/"data"/subject/f"speaker_seq{conditions.this_n+1}.pickle")

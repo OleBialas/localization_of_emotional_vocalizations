@@ -58,13 +58,19 @@ def block(speaker_seq, file_seq, kind='positive', noise_gain=-10):  # 'negative'
         main.write(tag="playbuflen", value=stimulus.nsamples, procs=speaker.analog_proc)
         main.write(tag="stim", value=stimulus.data.flatten(), procs=speaker.analog_proc)
         main.write(tag="chan0", value=speaker.channel, procs=speaker.analog_proc)
-        #correct_pose = False
-        #while not correct_pose:
-        #    main.wait_for_button()
-        #    correct_pose = main.check_pose(fix=(25, 0), var=10)
+        correct_pose = False
+        while not correct_pose:
+            main.wait_for_button()
+            correct_pose = main.check_pose(fix=(-29, 0), var=10)
+            if not correct_pose:  # play warning tone
+                sound = slab.Sound.tone(frequency=1000, duration=.5)
+                main.write(tag="playbuflen", value=sound.nsamples, procs="RX81")
+                main.write(tag="stim", value=sound.data.flatten(), procs="RX81")
+                main.write(tag="chan0", value=17, procs="RX81")
+                main.play()
         main.play_and_wait_for_button()
-        #azi, _ = main.get_headpose(convert=True, average=True, n=5)
-        #speaker_seq.add_response(azi)
+        azi, _ = main.get_headpose(convert=True, average=True, n=5)
+        speaker_seq.add_response(azi)
 
     return speaker_seq
 
